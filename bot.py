@@ -116,27 +116,29 @@ def build_ydl_options(quality: str, output_dir: Path):
         common["ffmpeg_location"] = ffmpeg_exe
 
     if quality == "audio":
-        return {
+        opts = {
             **common,
-            "format": "bestaudio/best",
-            "postprocessors": [
+            "format": "ba[acodec!=none]/b[acodec!=none]/best",
+        }
+        if ffmpeg_exe or shutil.which("ffmpeg"):
+            opts["postprocessors"] = [
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
                     "preferredquality": "128",
                 }
-            ],
-        }
+            ]
+        return opts
 
     height = int(quality)
-    # Prefer MP4-compatible streams, then fall back to the best available stream.
+    # Prefer MP4-compatible streams, excluding storyboard images (mhtml), then fall back to the best available stream.
     return {
         **common,
         "format": (
-            f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]/"
-            f"bestvideo[height<={height}]+bestaudio/"
-            f"best[height<={height}][ext=mp4]/"
-            f"best[height<={height}]/"
+            f"bv*[height<={height}][ext!=mhtml]+ba[ext!=mhtml]/"
+            f"b*[height<={height}][ext!=mhtml]/"
+            f"bv*[ext!=mhtml]+ba[ext!=mhtml]/"
+            f"b*[ext!=mhtml]/"
             f"best"
         ),
         "merge_output_format": "mp4",
