@@ -1,4 +1,4 @@
-﻿name: 24/7 Telegram Bot Server
+name: 24/7 Telegram Bot Server
 
 on:
   push:
@@ -38,6 +38,7 @@ jobs:
       - name: Run Telegram Bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
           DOWNLOAD_DIR: downloads
         run: |
           python bot.py

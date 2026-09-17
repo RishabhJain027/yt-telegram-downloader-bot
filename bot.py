@@ -94,7 +94,20 @@ def get_ffmpeg_path() -> Optional[str]:
         return None
 
 
+def get_cookie_file() -> Optional[str]:
+    if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
+        return "cookies.txt"
+    cookies_env = os.getenv("YOUTUBE_COOKIES", "").strip()
+    if cookies_env:
+        cookie_path = Path("downloads") / "youtube_cookies.txt"
+        cookie_path.parent.mkdir(parents=True, exist_ok=True)
+        cookie_path.write_text(cookies_env, encoding="utf-8")
+        return str(cookie_path)
+    return None
+
+
 def build_ydl_options(quality: str, output_dir: Path):
+    cookie_file = get_cookie_file()
     common = {
         "outtmpl": str(output_dir / "%(title).120s [%(id)s].%(ext)s"),
         "noplaylist": True,
@@ -111,6 +124,11 @@ def build_ydl_options(quality: str, output_dir: Path):
             }
         },
     }
+    if cookie_file:
+        common["cookiefile"] = cookie_file
+        # When cookies are present, we can also use the full web and mobile clients reliably
+        common["extractor_args"]["youtube"]["player_client"] = ["web", "mweb", "android", "ios"]
+        common["extractor_args"]["youtube"].pop("player_skip", None)
     ffmpeg_exe = get_ffmpeg_path()
     if ffmpeg_exe:
         common["ffmpeg_location"] = ffmpeg_exe
@@ -302,12 +320,23 @@ async def choose_quality(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         except yt_dlp.utils.DownloadError as exc:
             detail = str(exc).strip().splitlines()[-1] if str(exc).strip() else "Unknown yt-dlp error"
-            await status_message.edit_text(
-                "❌ Download failed.\n\n"
-                f"<code>{safe_filename(detail, 'yt-dlp error')[:900]}</code>\n\n"
-                "The video may be unavailable, age-restricted, private, or geo-blocked.",
-                parse_mode="HTML",
-            )
+            if "Sign in to confirm" in detail or "bot" in detail.lower():
+                await status_message.edit_text(
+                    "❌ <b>YouTube Anti-Bot Block</b>\n\n"
+                    "YouTube blocked this datacenter IP request.\n\n"
+                    "💡 <b>How to fix:</b>\n"
+                    "1. Export your YouTube cookies using the browser extension <i>Get cookies.txt locally</i>\n"
+                    "2. Add it as secret <code>YOUTUBE_COOKIES</code> in your GitHub repository secrets\n\n"
+                    "<i>(Or run <code>python bot.py</code> on your computer to download directly without any cookie)</i>",
+                    parse_mode="HTML",
+                )
+            else:
+                await status_message.edit_text(
+                    "❌ Download failed.\n\n"
+                    f"<code>{safe_filename(detail, 'yt-dlp error')[:900]}</code>\n\n"
+                    "The video may be unavailable, age-restricted, private, or geo-blocked.",
+                    parse_mode="HTML",
+                )
         except FileNotFoundError as exc:
             await status_message.edit_text(
                 "❌ FFmpeg is missing on the server. Install FFmpeg and restart the bot.\n"
