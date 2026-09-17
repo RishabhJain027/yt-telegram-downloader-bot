@@ -106,7 +106,8 @@ def build_ydl_options(quality: str, output_dir: Path):
         "socket_timeout": 60,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios", "mweb", "tv_embedded"]
+                "player_client": ["android", "ios"],
+                "player_skip": ["webpage", "configs"]
             }
         },
     }
