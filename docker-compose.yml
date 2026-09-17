@@ -1,0 +1,8 @@
+services:
+  yt-telegram-bot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./downloads:/app/downloads
