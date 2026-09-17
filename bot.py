@@ -104,6 +104,11 @@ def build_ydl_options(quality: str, output_dir: Path):
         "retries": 5,
         "fragment_retries": 5,
         "socket_timeout": 60,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "mweb", "tv_embedded"]
+            }
+        },
     }
     ffmpeg_exe = get_ffmpeg_path()
     if ffmpeg_exe:
@@ -128,7 +133,10 @@ def build_ydl_options(quality: str, output_dir: Path):
         **common,
         "format": (
             f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]/"
-            f"best[height<={height}][ext=mp4]/best[height<={height}]/best"
+            f"bestvideo[height<={height}]+bestaudio/"
+            f"best[height<={height}][ext=mp4]/"
+            f"best[height<={height}]/"
+            f"best"
         ),
         "merge_output_format": "mp4",
     }
